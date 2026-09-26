@@ -641,6 +641,7 @@ export default function FixedAssetsLocationTransfers() {
                       size="small"
                       startIcon={<AddIcon />}
                       onClick={handleAddItem}
+                      disabled={!row.itemCode || !(Number(row.quantity) > 0)}
                     >
                       Add
                     </Button>

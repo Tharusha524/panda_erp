@@ -76,14 +76,6 @@ export default function FixedAssetsDisposalSuccess() {
           >
            Enter Another Disposal
           </Button>
-
-          <Button
-            variant="outlined"
-            sx={{ width: '500px' }}
-            onClick={() => navigate("/itemsandinventory/transactions/inventory-adjustments/add-attachment", { state })}
-          >
-            Add an attachment
-          </Button>
         </Stack>
       </Paper>
     </FormPageLayout>

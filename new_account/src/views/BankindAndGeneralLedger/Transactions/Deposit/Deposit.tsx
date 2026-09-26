@@ -497,14 +497,21 @@ export default function Deposits() {
                   <TextField size="small" value={row.costCenter} onChange={(e) => handleChange(row.id, "costCenter", e.target.value)} />
                 </TableCell>
                 <TableCell>
-                  <FormattedNumberField size="small" value={row.amount} onChange={(e) => handleChange(row.id, "amount", e.target.value)} />
+                  <FormattedNumberField size="small" fixedDecimals={2} value={row.amount} onChange={(e) => handleChange(row.id, "amount", e.target.value)} />
                 </TableCell>
                 <TableCell>
                   <TextField size="small" fullWidth sx={{ minWidth: 260 }} value={row.memo} onChange={(e) => handleChange(row.id, "memo", e.target.value)} />
                 </TableCell>
                 <TableCell align="center">
                   {index === rows.length - 1 ? (
-                    <Button variant="contained" color="primary" size="small" startIcon={<AddIcon />} onClick={handleAddItem}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      onClick={handleAddItem}
+                      disabled={!row.selectedAccountCode || !(Number(row.amount) > 0)}
+                    >
                       Add
                     </Button>
                   ) : (

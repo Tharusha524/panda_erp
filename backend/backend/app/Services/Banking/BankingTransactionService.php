@@ -58,22 +58,146 @@ class BankingTransactionService
     public function postTransfer(array $data): array
     {
         return DB::transaction(function () use ($data) {
-            $fromId = (int) ($data['from_account_id'] ?? 0);
-            $toId = (int) ($data['to_account_id'] ?? 0);
-            $amount = abs((float) ($data['amount'] ?? 0));
-            $charge = abs((float) ($data['bank_charge'] ?? 0));
-            $date = $data['trans_date'] ?? now()->toDateString();
-            $reference = $data['reference'] ?? ('TRF-'.time());
-            $memo = $data['memo'] ?? '';
-            $costCenterId = (int) ($data['cost_center_id'] ?? 0) ?: null;
+            $transNo = $this->nextTransNo(self::TYPE_TRANSFER);
 
-            if ($fromId <= 0 || $toId <= 0 || $amount <= 0) {
-                throw new \InvalidArgumentException('From account, to account, and amount are required.');
+            return $this->persistTransfer($transNo, $data, false);
+        });
+    }
+
+    public function getTransfer(int $transNo): array
+    {
+        if ($transNo <= 0) {
+            throw new \InvalidArgumentException('Invalid transfer transaction number.');
+        }
+
+        if (! Schema::hasTable('bank_trans')) {
+            throw new \InvalidArgumentException('Bank transfer not found.');
+        }
+
+        $rows = DB::table('bank_trans')
+            ->where('type', self::TYPE_TRANSFER)
+            ->where('trans_no', $transNo)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            throw new \InvalidArgumentException('Bank transfer not found.');
+        }
+
+        if ($rows->contains(fn ($r) => ! empty($r->reconciled))) {
+            throw new \InvalidArgumentException('This bank transfer has been reconciled and cannot be edited.');
+        }
+
+        $outRow = $rows->first(fn ($r) => (float) $r->amount < 0);
+        $inRow = $rows->first(fn ($r) => (float) $r->amount > 0);
+
+        if (! $outRow || ! $inRow) {
+            throw new \InvalidArgumentException('Bank transfer is incomplete and cannot be edited.');
+        }
+
+        $charge = 0.0;
+        $memo = '';
+        if (Schema::hasColumn('gl_trans', 'type_no')) {
+            $chargeLine = DB::table('gl_trans')
+                ->where('type', (string) self::TYPE_TRANSFER)
+                ->where('type_no', $transNo)
+                ->where('memo', 'Bank charge')
+                ->where('credit', '>', 0)
+                ->first();
+            if ($chargeLine) {
+                $charge = (float) $chargeLine->credit;
             }
 
-            $transNo = $this->nextTransNo(self::TYPE_TRANSFER);
-            $this->assertSufficientBankBalance($fromId, $amount + $charge, $date, self::TYPE_TRANSFER, $transNo, false);
+            $memoLine = DB::table('gl_trans')
+                ->where('type', (string) self::TYPE_TRANSFER)
+                ->where('type_no', $transNo)
+                ->whereNotIn('memo', ['Transfer in', 'Transfer out', 'Bank charge'])
+                ->value('memo');
+            $memo = (string) ($memoLine ?? '');
+        }
 
+        return [
+            'trans_no' => $transNo,
+            'trans_type' => self::TYPE_TRANSFER,
+            'from_account_id' => (int) $outRow->bank_act,
+            'to_account_id' => (int) $inRow->bank_act,
+            'amount' => round((float) $inRow->amount, 2),
+            'trans_date' => $outRow->trans_date,
+            'reference' => $outRow->ref ?? '',
+            'bank_charge' => round($charge, 2),
+            'memo' => $memo,
+            'cost_center_id' => $outRow->cost_center_id ?? null,
+        ];
+    }
+
+    public function updateTransfer(int $transNo, array $data): array
+    {
+        return DB::transaction(function () use ($transNo, $data) {
+            // Validates the transfer exists and isn't already reconciled.
+            $this->getTransfer($transNo);
+
+            DB::table('gl_trans')
+                ->where('type', (string) self::TYPE_TRANSFER)
+                ->where('type_no', $transNo)
+                ->delete();
+
+            return $this->persistTransfer($transNo, $data, true);
+        });
+    }
+
+    /**
+     * @return array{trans_no:int, trans_type:int, reference:string, bank_trans: array<int, array<string, mixed>>}
+     */
+    private function persistTransfer(int $transNo, array $data, bool $isUpdate): array
+    {
+        $fromId = (int) ($data['from_account_id'] ?? 0);
+        $toId = (int) ($data['to_account_id'] ?? 0);
+        $amount = abs((float) ($data['amount'] ?? 0));
+        $charge = abs((float) ($data['bank_charge'] ?? 0));
+        $date = $data['trans_date'] ?? now()->toDateString();
+        $reference = trim((string) ($data['reference'] ?? ''));
+        if ($reference === '') {
+            $reference = 'TRF-'.$transNo;
+        }
+        $memo = $data['memo'] ?? '';
+        $costCenterId = (int) ($data['cost_center_id'] ?? 0) ?: null;
+
+        if ($fromId <= 0 || $toId <= 0 || $amount <= 0) {
+            throw new \InvalidArgumentException('From account, to account, and amount are required.');
+        }
+        if ($fromId === $toId) {
+            throw new \InvalidArgumentException('From account and to account must be different.');
+        }
+
+        $this->assertSufficientBankBalance($fromId, $amount + $charge, $date, self::TYPE_TRANSFER, $transNo, $isUpdate);
+
+        if ($isUpdate) {
+            $outId = (int) DB::table('bank_trans')
+                ->where('type', self::TYPE_TRANSFER)->where('trans_no', $transNo)
+                ->where('amount', '<', 0)->value('id');
+            $inId = (int) DB::table('bank_trans')
+                ->where('type', self::TYPE_TRANSFER)->where('trans_no', $transNo)
+                ->where('amount', '>', 0)->value('id');
+
+            DB::table('bank_trans')->where('id', $outId)->update([
+                'bank_act' => $fromId,
+                'ref' => $reference,
+                'trans_date' => $date,
+                'amount' => -$amount,
+                'cost_center_id' => $costCenterId,
+                'updated_at' => now(),
+            ]);
+            DB::table('bank_trans')->where('id', $inId)->update([
+                'bank_act' => $toId,
+                'ref' => $reference,
+                'trans_date' => $date,
+                'amount' => $amount,
+                'cost_center_id' => $costCenterId,
+                'updated_at' => now(),
+            ]);
+
+            $out = ['id' => $outId, 'bank_act' => $fromId, 'amount' => -$amount];
+            $in = ['id' => $inId, 'bank_act' => $toId, 'amount' => $amount];
+        } else {
             $out = $this->insertBankTrans([
                 'bank_act' => $fromId,
                 'trans_no' => $transNo,
@@ -93,29 +217,31 @@ class BankingTransactionService
                 'amount' => $amount,
                 'cost_center_id' => $costCenterId,
             ]);
+        }
 
-            $fromGl = $this->bankGlCode($fromId);
-            $toGl = $this->bankGlCode($toId);
-            $chargeGl = $this->pref('bank_charge_act') ?? $fromGl;
+        $fromGl = $this->bankGlCode($fromId);
+        $toGl = $this->bankGlCode($toId);
+        $chargeGl = $this->pref('bank_charge_act') ?? $fromGl;
 
-            if ($fromGl && $toGl) {
-                $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $toGl, $amount, 0, $memo ?: 'Transfer in', $costCenterId);
-                $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $fromGl, 0, $amount, $memo ?: 'Transfer out', $costCenterId);
-                if ($charge > 0 && $chargeGl) {
-                    $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $chargeGl, $charge, 0, 'Bank charge', $costCenterId);
-                    $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $fromGl, 0, $charge, 'Bank charge', $costCenterId);
-                }
+        if ($fromGl && $toGl) {
+            $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $toGl, $amount, 0, $memo ?: 'Transfer in', $costCenterId);
+            $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $fromGl, 0, $amount, $memo ?: 'Transfer out', $costCenterId);
+            if ($charge > 0 && $chargeGl) {
+                $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $chargeGl, $charge, 0, 'Bank charge', $costCenterId);
+                $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $fromGl, 0, $charge, 'Bank charge', $costCenterId);
             }
+        }
 
+        if (! $isUpdate) {
             AuditTrailRecorder::record(self::TYPE_TRANSFER, $transNo, $date, 'Bank transfer');
+        }
 
-            return [
-                'trans_no' => $transNo,
-                'trans_type' => self::TYPE_TRANSFER,
-                'reference' => $reference,
-                'bank_trans' => [$out, $in],
-            ];
-        });
+        return [
+            'trans_no' => $transNo,
+            'trans_type' => self::TYPE_TRANSFER,
+            'reference' => $reference,
+            'bank_trans' => [$out, $in],
+        ];
     }
 
     public function postJournal(array $data): array

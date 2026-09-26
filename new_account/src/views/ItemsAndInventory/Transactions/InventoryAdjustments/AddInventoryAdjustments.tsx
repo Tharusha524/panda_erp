@@ -559,6 +559,7 @@ export default function AddInventoryAdjustments() {
                       size="small"
                       startIcon={<AddIcon />}
                       onClick={handleAddItem}
+                      disabled={!row.itemCode || !(Number(row.quantity) > 0)}
                     >
                       Add
                     </Button>

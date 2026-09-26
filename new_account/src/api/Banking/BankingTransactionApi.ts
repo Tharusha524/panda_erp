@@ -76,7 +76,7 @@ export const postBankingDeposit = async (payload: {
   return data;
 };
 
-export const postBankingTransfer = async (payload: {
+export interface BankingTransferPayload {
   from_account_id: number;
   to_account_id: number;
   amount: number;
@@ -85,8 +85,20 @@ export const postBankingTransfer = async (payload: {
   bank_charge?: number;
   memo?: string;
   cost_center_id?: number;
-}) => {
+}
+
+export const postBankingTransfer = async (payload: BankingTransferPayload) => {
   const { data } = await api.post("/banking/transfer", payload);
+  return data;
+};
+
+export const getBankingTransfer = async (transNo: number) => {
+  const { data } = await api.get(`/banking/transfer/${transNo}`);
+  return data;
+};
+
+export const putBankingTransfer = async (transNo: number, payload: BankingTransferPayload) => {
+  const { data } = await api.put(`/banking/transfer/${transNo}`, payload);
   return data;
 };
 

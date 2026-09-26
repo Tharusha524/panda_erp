@@ -153,8 +153,12 @@ class TransactionReferenceService
                 ->whereNotNull($source['reference_column'])
                 ->where($source['reference_column'], '!=', '');
 
-            if (! empty($source['type_column']) && ! empty($source['types'])) {
-                $query->whereIn($source['type_column'], $source['types']);
+            // Restrict to the specific type being requested, not the source's
+            // whole type list — otherwise Payment/Deposit/Transfer/Journal
+            // (which all live in the same 'journal' source entry) would count
+            // each other's references and hand out colliding sequence numbers.
+            if (! empty($source['type_column'])) {
+                $query->where($source['type_column'], $transType);
             }
 
             if (! empty($source['date_column']) && Schema::hasColumn($source['table'], $source['date_column'])) {
@@ -221,6 +225,17 @@ class TransactionReferenceService
                 'type_column' => 'type',
                 'date_column' => 'tran_date',
                 'reference_column' => 'reference',
+            ],
+            // Bank Payment (1), Bank Deposit (2), and Funds Transfer (4) are
+            // actually recorded in bank_trans, not 'journal' — without this,
+            // their reference counter never sees previously used references
+            // and keeps handing out the same "next" number for every save.
+            [
+                'table' => 'bank_trans',
+                'types' => [1, 2, 4],
+                'type_column' => 'type',
+                'date_column' => 'trans_date',
+                'reference_column' => 'ref',
             ],
             [
                 'table' => 'grn_batch',

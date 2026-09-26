@@ -304,15 +304,17 @@ export default function BankAccountInquiry() {
                           ? Number(r.transType)
                           : undefined;
 
-                      // Only Journal Entry (0) and Bank Payment (1) support
-                      // editing today — Bank Deposit and Funds Transfer have
-                      // no edit screen/API yet.
+                      // Bank Deposit (2) still has no edit screen/API.
                       if (transType === 0) {
                         navigate("/bankingandgeneralledger/transactions/journal-entry", {
                           state: { trans_no: transNo },
                         });
                       } else if (transType === 1) {
                         navigate("/bankingandgeneralledger/transactions/payments", {
+                          state: { trans_no: transNo },
+                        });
+                      } else if (transType === 4) {
+                        navigate("/bankingandgeneralledger/transactions/bank-account-transfers", {
                           state: { trans_no: transNo },
                         });
                       } else {

@@ -88,14 +88,6 @@ export default function JournalEntrySuccess() {
           </Button>
 
           <Button
-            variant="outlined"
-            sx={{ width: '500px' }}
-            onClick={() => navigate("/bankingandgeneralledger/transactions/journal-entry/add-attachment", { state })}
-          >
-            5. Add an attachment
-          </Button>
-
-          <Button
             variant="contained"
             sx={{ width: '500px' }}
             onClick={() =>

@@ -23,6 +23,7 @@ import {
   formatJournalColumnAmount,
   journalColumnTotals,
 } from "../../utils/journalAmount";
+import "../../styles/transactionPrint.css";
 
 export interface GLJournalEntriesPageProps {
   breadcrumbs: { title: string; href?: string }[];
@@ -111,9 +112,11 @@ export default function GLJournalEntriesPage({
       >
         <Box>
           <PageTitle title={pageTitle} />
-          <Breadcrumb breadcrumbs={breadcrumbs} />
+          <Box className="no-print">
+            <Breadcrumb breadcrumbs={breadcrumbs} />
+          </Box>
         </Box>
-        <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>
+        <Button className="no-print" variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>
           Back
         </Button>
       </Box>
@@ -319,7 +322,7 @@ export default function GLJournalEntriesPage({
       )}
 
       {hasEntries && (
-        <Box sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}>
+        <Box className="no-print" sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}>
           <Button variant="contained" startIcon={<PrintIcon />} onClick={() => window.print()}>
             Print
           </Button>

@@ -1117,6 +1117,7 @@ export default function JournalEntry() {
                     sx={{ minWidth: 110 }}
                     inputProps={{ step: "0.01" }}
                     placeholder="0.00"
+                    fixedDecimals={2}
                     value={row.debit}
                     onChange={(e) => handleDebitCreditChange(row.id, "debit", e.target.value)}
                   />
@@ -1128,6 +1129,7 @@ export default function JournalEntry() {
                     sx={{ minWidth: 110 }}
                     inputProps={{ step: "0.01" }}
                     placeholder="0.00"
+                    fixedDecimals={2}
                     value={row.credit}
                     onChange={(e) => handleDebitCreditChange(row.id, "credit", e.target.value)}
                   />
@@ -1137,7 +1139,14 @@ export default function JournalEntry() {
                 </TableCell>
                 <TableCell align="center">
                   {index === rows.length - 1 ? (
-                    <Button variant="contained" color="primary" size="small" startIcon={<AddIcon />} onClick={handleAddItem}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      onClick={handleAddItem}
+                      disabled={!row.selectedAccountCode || !(Number(row.debit) > 0 || Number(row.credit) > 0)}
+                    >
                       Add
                     </Button>
                   ) : (

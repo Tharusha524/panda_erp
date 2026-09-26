@@ -315,6 +315,8 @@ Route::get('banking/payment/{transNo}', [BankingTransactionController::class, 's
 Route::put('banking/payment/{transNo}', [BankingTransactionController::class, 'updatePayment']);
 Route::post('banking/deposit', [BankingTransactionController::class, 'deposit']);
 Route::post('banking/transfer', [BankingTransactionController::class, 'transfer']);
+Route::get('banking/transfer/{transNo}', [BankingTransactionController::class, 'showTransfer']);
+Route::put('banking/transfer/{transNo}', [BankingTransactionController::class, 'updateTransfer']);
 Route::post('banking/journal', [BankingTransactionController::class, 'journal']);
 Route::get('banking/journal/{transNo}', [BankingTransactionController::class, 'showJournal']);
 Route::put('banking/journal/{transNo}', [BankingTransactionController::class, 'updateJournal']);

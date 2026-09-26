@@ -81,16 +81,6 @@ export default function DepositSuccess() {
           >
             3. Enter another deposit
           </Button>
-
-          <Button
-            variant="outlined"
-            sx={{ width: "500px" }}
-            onClick={() =>
-              navigate("/bankingandgeneralledger/transactions/deposit/add-attachment", { state })
-            }
-          >
-            4. Add an attachment
-          </Button>
         </Stack>
       </Paper>
     </FormPageLayout>

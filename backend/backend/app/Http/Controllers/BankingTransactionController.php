@@ -93,7 +93,51 @@ class BankingTransactionController extends Controller
 
     public function transfer(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        $validated = $this->validateTransfer($request);
+
+        try {
+            return response()->json($this->service->postTransfer($validated), 201);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'Failed to create bank transfer.'], 500);
+        }
+    }
+
+    public function showTransfer(int $transNo): JsonResponse
+    {
+        try {
+            return response()->json($this->service->getTransfer($transNo));
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'Failed to load bank transfer.'], 500);
+        }
+    }
+
+    public function updateTransfer(Request $request, int $transNo): JsonResponse
+    {
+        $validated = $this->validateTransfer($request);
+
+        try {
+            return response()->json($this->service->updateTransfer($transNo, $validated));
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'Failed to update bank transfer.'], 500);
+        }
+    }
+
+    /** @return array<string, mixed> */
+    private function validateTransfer(Request $request): array
+    {
+        return $request->validate([
             'from_account_id' => 'required|integer',
             'to_account_id' => 'required|integer',
             'amount' => 'required|numeric|min:0.01',
@@ -103,8 +147,6 @@ class BankingTransactionController extends Controller
             'memo' => 'nullable|string',
             'cost_center_id' => 'nullable|integer',
         ]);
-
-        return response()->json($this->service->postTransfer($validated), 201);
     }
 
     public function journal(Request $request): JsonResponse
