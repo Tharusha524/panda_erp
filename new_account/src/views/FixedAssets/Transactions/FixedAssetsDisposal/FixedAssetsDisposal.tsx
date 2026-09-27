@@ -193,6 +193,9 @@ export default function FixedAssetsDisposal() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [processError, setProcessError] = useState("");
     const [processSuccess, setProcessSuccess] = useState(false);
+    // A completed row (not the last, always-open one) is locked until its
+    // "Edit" button is clicked — before that, its fields can't be changed.
+    const [editingRowId, setEditingRowId] = useState<number | null>(null);
 
     // Update QOH when location changes
     useEffect(() => {
@@ -545,7 +548,11 @@ export default function FixedAssetsDisposal() {
                     </TableHead>
 
                     <TableBody>
-                        {rows.map((row, index) => (
+                        {rows.map((row, index) => {
+                            const isLastRow = index === rows.length - 1;
+                            const isLocked = !isLastRow && editingRowId !== row.id;
+
+                            return (
                             <TableRow key={row.id} hover data-row-id={row.id}>
                                 <TableCell>{index + 1}</TableCell>
                                 <TableCell>
@@ -553,6 +560,7 @@ export default function FixedAssetsDisposal() {
                                         displayField="code"
                                         hideLabel
                                         placeholder="Search fixed asset code…"
+                                        disabled={isLocked}
                                         selectedStockId={String(row.selectedItemId ?? row.itemCode ?? "")}
                                         value={row.itemCode}
                                         items={items as ItemSearchOption[]}
@@ -564,6 +572,7 @@ export default function FixedAssetsDisposal() {
                                         displayField="description"
                                         hideLabel
                                         placeholder="Search fixed asset…"
+                                        disabled={isLocked}
                                         selectedStockId={String(row.selectedItemId ?? row.itemCode ?? "")}
                                         value={row.description}
                                         items={items as ItemSearchOption[]}
@@ -574,6 +583,7 @@ export default function FixedAssetsDisposal() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.quantity}
+                                        InputProps={{ readOnly: isLocked }}
                                         onChange={(e) =>
                                             handleChange(row.id, "quantity", Number(e.target.value))
                                         }
@@ -598,6 +608,7 @@ export default function FixedAssetsDisposal() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.unitCost}
+                                        InputProps={{ readOnly: isLocked }}
                                         onChange={(e) => handleChange(row.id, "unitCost", e.target.value)}
                                     />
                                 </TableCell>
@@ -605,6 +616,7 @@ export default function FixedAssetsDisposal() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.initialValue}
+                                        InputProps={{ readOnly: isLocked }}
                                         onChange={(e) => handleChange(row.id, "initialValue", e.target.value)}
                                     />
                                 </TableCell>
@@ -619,7 +631,7 @@ export default function FixedAssetsDisposal() {
                                     />
                                 </TableCell>
                                 <TableCell align="center">
-                                    {index === rows.length - 1 ? (
+                                    {isLastRow ? (
                                         <Button
                                             variant="contained"
                                             color="primary"
@@ -632,21 +644,20 @@ export default function FixedAssetsDisposal() {
                                         </Button>
                                     ) : (
                                         <Stack direction="row" spacing={1} justifyContent="center">
-                                            <Button
-                                                variant="outlined"
-                                                size="small"
-                                                startIcon={<EditIcon />}
-                                                onClick={() => {
-                                                    // Focus on the first editable field (description)
-                                                    const rowElement = document.querySelector(`[data-row-id="${row.id}"]`);
-                                                    if (rowElement) {
-                                                        const firstInput = rowElement.querySelector('input:not([readonly])') as HTMLInputElement;
-                                                        if (firstInput) firstInput.focus();
-                                                    }
-                                                }}
-                                            >
-                                                Edit
-                                            </Button>
+                                            {editingRowId === row.id ? (
+                                                <Button variant="contained" size="small" onClick={() => setEditingRowId(null)}>
+                                                    Done
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    startIcon={<EditIcon />}
+                                                    onClick={() => setEditingRowId(row.id)}
+                                                >
+                                                    Edit
+                                                </Button>
+                                            )}
                                             <Button
                                                 variant="outlined"
                                                 color="error"
@@ -660,6 +671,8 @@ export default function FixedAssetsDisposal() {
                                     )}
                                 </TableCell>
                             </TableRow>
+                            );
+                        })}
                         ))}
                     </TableBody>
                 </Table>

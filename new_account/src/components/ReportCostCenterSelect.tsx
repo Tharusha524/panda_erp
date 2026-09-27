@@ -8,6 +8,7 @@ interface ReportCostCenterSelectProps {
   onChange: (value: string) => void;
   costCenter2Value?: string;
   onCostCenter2Change?: (value: string) => void;
+  disabled?: boolean;
 }
 
 /** CostCenter filter(s) for report PDF forms — FA dim1 / dim2 when enabled. */
@@ -16,6 +17,7 @@ export default function ReportCostCenterSelect({
   onChange,
   costCenter2Value = "",
   onCostCenter2Change,
+  disabled,
 }: ReportCostCenterSelectProps) {
   const { useCostCenters, costCenterLevel } = useCompanySetupSettings();
 
@@ -32,6 +34,7 @@ export default function ReportCostCenterSelect({
         emptyLabel="No costCenter filter"
         label="Cost Center"
         costCenterType={1}
+        disabled={disabled}
       />
       {costCenterLevel >= 2 && onCostCenter2Change && (
         <CostCenterSelect
@@ -41,6 +44,7 @@ export default function ReportCostCenterSelect({
           emptyLabel="No costCenter 2 filter"
           label="CostCenter 2"
           costCenterType={2}
+          disabled={disabled}
         />
       )}
     </Stack>

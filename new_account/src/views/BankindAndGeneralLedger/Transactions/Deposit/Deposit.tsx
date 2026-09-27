@@ -158,6 +158,9 @@ export default function Deposits() {
   const [saveError, setSaveError] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [openSelectRowId, setOpenSelectRowId] = useState<number | null>(null);
+  // A completed row (not the last, always-open one) is locked until its
+  // "Edit" button is clicked — before that, its fields can't be changed.
+  const [editingRowId, setEditingRowId] = useState<number | null>(null);
 
   useEffect(() => {
     if (nextReference) {
@@ -433,7 +436,11 @@ export default function Deposits() {
           </TableHead>
 
           <TableBody>
-            {rows.map((row, index) => (
+            {rows.map((row, index) => {
+              const isLastRow = index === rows.length - 1;
+              const isLocked = !isLastRow && editingRowId !== row.id;
+
+              return (
               <TableRow key={row.id} hover data-row-id={row.id}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>
@@ -443,6 +450,7 @@ export default function Deposits() {
                   <TextField
                     select
                     size="small"
+                    disabled={isLocked}
                     value={String(row.selectedAccountCode || row.accountCode || "")}
                     SelectProps={{
                         open: openSelectRowId === row.id,
@@ -494,16 +502,34 @@ export default function Deposits() {
                   </TextField>
                 </TableCell>
                 <TableCell>
-                  <TextField size="small" value={row.costCenter} onChange={(e) => handleChange(row.id, "costCenter", e.target.value)} />
+                  <TextField
+                    size="small"
+                    value={row.costCenter}
+                    InputProps={{ readOnly: isLocked }}
+                    onChange={(e) => handleChange(row.id, "costCenter", e.target.value)}
+                  />
                 </TableCell>
                 <TableCell>
-                  <FormattedNumberField size="small" fixedDecimals={2} value={row.amount} onChange={(e) => handleChange(row.id, "amount", e.target.value)} />
+                  <FormattedNumberField
+                    size="small"
+                    fixedDecimals={2}
+                    value={row.amount}
+                    InputProps={{ readOnly: isLocked }}
+                    onChange={(e) => handleChange(row.id, "amount", e.target.value)}
+                  />
                 </TableCell>
                 <TableCell>
-                  <TextField size="small" fullWidth sx={{ minWidth: 260 }} value={row.memo} onChange={(e) => handleChange(row.id, "memo", e.target.value)} />
+                  <TextField
+                    size="small"
+                    fullWidth
+                    sx={{ minWidth: 260 }}
+                    value={row.memo}
+                    InputProps={{ readOnly: isLocked }}
+                    onChange={(e) => handleChange(row.id, "memo", e.target.value)}
+                  />
                 </TableCell>
                 <TableCell align="center">
-                  {index === rows.length - 1 ? (
+                  {isLastRow ? (
                     <Button
                       variant="contained"
                       color="primary"
@@ -516,19 +542,22 @@ export default function Deposits() {
                     </Button>
                   ) : (
                     <Stack direction="row" spacing={1} justifyContent="center">
-                      <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => {
-                        const rowElement = document.querySelector(`[data-row-id="${row.id}"]`);
-                        if (rowElement) {
-                          const firstInput = rowElement.querySelector('input') as HTMLInputElement;
-                          if (firstInput) firstInput.focus();
-                        }
-                      }}>Edit</Button>
+                      {editingRowId === row.id ? (
+                        <Button variant="contained" size="small" onClick={() => setEditingRowId(null)}>
+                          Done
+                        </Button>
+                      ) : (
+                        <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => setEditingRowId(row.id)}>
+                          Edit
+                        </Button>
+                      )}
                       <Button variant="outlined" color="error" size="small" startIcon={<DeleteIcon />} onClick={() => handleRemoveRow(row.id)}>Delete</Button>
                     </Stack>
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
 
           <TableFooter>

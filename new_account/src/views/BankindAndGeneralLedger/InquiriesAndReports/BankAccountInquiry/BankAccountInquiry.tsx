@@ -75,12 +75,18 @@ export default function BankAccountInquiry() {
 
   const [selectedAccount, setSelectedAccount] = useState("");
 
-  // "Cash"-style accounts (Petty Cash / Cash In Hand) show "Cash book
-  // balance" instead of "Bank book balance" — matched by name, not a
-  // hardcoded id, so it works regardless of a company's account_types setup.
+  // Label the balance with the selected account's own name — "Cash book
+  // balance" for Cash-style accounts (matched by type, not a hardcoded id),
+  // otherwise "<Account Name> book balance", falling back to "Bank" when
+  // nothing is selected yet.
   const selectedBankAccount = (bankAccounts as any[]).find((acc: any) => String(acc.id) === String(selectedAccount));
   const selectedAccountType = (accountTypes as any[]).find((t: any) => String(t.id) === String(selectedBankAccount?.account_type));
   const isCashAccount = (selectedAccountType?.type_name || "").toLowerCase().includes("cash");
+  const bookBalanceLabel = isCashAccount
+    ? "Cash book balance"
+    : selectedBankAccount?.bank_account_name
+      ? `${selectedBankAccount.bank_account_name} book balance`
+      : "Bank book balance";
   const today = new Date().toISOString().split("T")[0];
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
@@ -226,7 +232,7 @@ export default function BankAccountInquiry() {
 
         {summary && (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            {isCashAccount ? "Cash book balance" : "Bank book balance"} (all dates): <strong>{formatMoney(summary.book_balance)}</strong>
+            {bookBalanceLabel} (all dates): <strong>{formatMoney(summary.book_balance)}</strong>
           </Typography>
         )}
       </Paper>
@@ -307,15 +313,15 @@ export default function BankAccountInquiry() {
                       // Bank Deposit (2) still has no edit screen/API.
                       if (transType === 0) {
                         navigate("/bankingandgeneralledger/transactions/journal-entry", {
-                          state: { trans_no: transNo },
+                          state: { trans_no: transNo, trans_type: transType },
                         });
                       } else if (transType === 1) {
                         navigate("/bankingandgeneralledger/transactions/payments", {
-                          state: { trans_no: transNo },
+                          state: { trans_no: transNo, trans_type: transType },
                         });
                       } else if (transType === 4) {
                         navigate("/bankingandgeneralledger/transactions/bank-account-transfers", {
-                          state: { trans_no: transNo },
+                          state: { trans_no: transNo, trans_type: transType },
                         });
                       } else {
                         notify.info(`Editing "${r.type}" transactions isn't supported yet.`);

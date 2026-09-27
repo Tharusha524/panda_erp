@@ -126,6 +126,9 @@ export default function AddInventoryAdjustments() {
   const [date, setDate] = useState<string>("");
   const [reference, setReference] = useState("");
   const [dateError, setDateError] = useState("");
+  // A completed row (not the last, always-open one) is locked until its
+  // "Edit" button is clicked — before that, its fields can't be changed.
+  const [editingRowId, setEditingRowId] = useState<number | null>(null);
 
   const { reference: nextReference, manualEntryRequired } = useNextFiscalYearReference(17, {
     enabled: Boolean(selectedFiscalYear),
@@ -459,13 +462,18 @@ export default function AddInventoryAdjustments() {
           </TableHead>
 
           <TableBody>
-            {rows.map((row, index) => (
+            {rows.map((row, index) => {
+              const isLastRow = index === rows.length - 1;
+              const isLocked = !isLastRow && editingRowId !== row.id;
+
+              return (
               <TableRow key={row.id} hover data-row-id={row.id}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>
                   <ItemSearchSelect
                     displayField="code"
                     hideLabel
+                    disabled={isLocked}
                     selectedStockId={String(row.selectedItemId ?? row.itemCode ?? "")}
                     value={row.itemCode}
                     items={
@@ -488,6 +496,7 @@ export default function AddInventoryAdjustments() {
                   <ItemSearchSelect
                     displayField="description"
                     hideLabel
+                    disabled={isLocked}
                     selectedStockId={String(row.selectedItemId ?? row.itemCode ?? "")}
                     value={row.description}
                     items={
@@ -519,6 +528,7 @@ export default function AddInventoryAdjustments() {
                   <FormattedNumberField
                     size="small"
                     value={row.quantity}
+                    InputProps={{ readOnly: isLocked }}
                     onChange={(e) =>
                       handleChange(row.id, "quantity", Number(e.target.value))
                     }
@@ -552,7 +562,7 @@ export default function AddInventoryAdjustments() {
                   <Typography>{Number(row.total).toFixed(2)}</Typography>
                 </TableCell>
                 <TableCell align="center">
-                  {index === rows.length - 1 ? (
+                  {isLastRow ? (
                     <Button
                       variant="contained"
                       color="primary"
@@ -565,21 +575,20 @@ export default function AddInventoryAdjustments() {
                     </Button>
                   ) : (
                     <Stack direction="row" spacing={1} justifyContent="center">
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<EditIcon />}
-                        onClick={() => {
-                          // Focus on the first editable field (item code)
-                          const rowElement = document.querySelector(`[data-row-id="${row.id}"]`);
-                          if (rowElement) {
-                            const firstInput = rowElement.querySelector('input') as HTMLInputElement;
-                            if (firstInput) firstInput.focus();
-                          }
-                        }}
-                      >
-                        Edit
-                      </Button>
+                      {editingRowId === row.id ? (
+                        <Button variant="contained" size="small" onClick={() => setEditingRowId(null)}>
+                          Done
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<EditIcon />}
+                          onClick={() => setEditingRowId(row.id)}
+                        >
+                          Edit
+                        </Button>
+                      )}
                       <Button
                         variant="outlined"
                         color="error"
@@ -593,7 +602,8 @@ export default function AddInventoryAdjustments() {
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
 
           <TableFooter>
