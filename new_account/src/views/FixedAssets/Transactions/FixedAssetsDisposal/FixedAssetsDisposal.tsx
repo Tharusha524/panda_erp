@@ -673,7 +673,6 @@ export default function FixedAssetsDisposal() {
                             </TableRow>
                             );
                         })}
-                        ))}
                     </TableBody>
                 </Table>
             </TableContainer>
