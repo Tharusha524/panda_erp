@@ -95,12 +95,18 @@ class SalesOrderPostingService
     private function createHeader(array $data): SalesOrder
     {
         $attempts = 0;
+        $lastException = null;
         while ($attempts < 3) {
             try {
                 return SalesOrder::query()->create($data);
             } catch (\Illuminate\Database\QueryException $e) {
                 $attempts++;
-                if ($e->getCode() == '23000') {
+                $lastException = $e;
+                // MySQL uses SQLSTATE 23000 for both a duplicate order_no
+                // (retryable) and any other foreign-key/constraint failure
+                // (not retryable — bumping order_no won't fix it). Only
+                // retry when the message actually names the primary key.
+                if ($e->getCode() == '23000' && str_contains($e->getMessage(), "for key 'PRIMARY'")) {
                     $max = (int) (DB::table('sales_orders')->max('order_no') ?? 0);
                     $data['order_no'] = $max + 1;
                     continue;
@@ -109,7 +115,9 @@ class SalesOrderPostingService
             }
         }
 
-        throw new \RuntimeException('Unable to allocate unique order_no after retries');
+        throw new \RuntimeException(
+            'Unable to allocate unique order_no after retries: '.($lastException?->getMessage() ?? 'unknown error')
+        );
     }
 
     /**

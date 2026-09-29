@@ -19,6 +19,7 @@ import {
     ListSubheader,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
@@ -220,6 +221,9 @@ export default function CustomerCreditNotes() {
             material_cost: 0,
         },
     ]);
+    // A completed row (not the last, always-open one) is locked until its
+    // "Edit" button is clicked — before that, its fields can't be changed.
+    const [editingRowId, setEditingRowId] = useState<number | null>(null);
 
     const handleAddRow = () => {
         setRows((prev) => [
@@ -639,13 +643,18 @@ export default function CustomerCreditNotes() {
                     </TableHead>
 
                     <TableBody>
-                        {rows.map((row, i) => (
+                        {rows.map((row, i) => {
+                            const isLastRow = i === rows.length - 1;
+                            const isLocked = !isLastRow && editingRowId !== row.id;
+
+                            return (
                             <TableRow key={row.id}>
                                 <TableCell>{i + 1}</TableCell>
                                 <TableCell>
                                     <TextField
                                         size="small"
                                         value={row.itemCode}
+                                        InputProps={{ readOnly: isLocked }}
                                         onChange={(e) => handleChange(row.id, "itemCode", e.target.value)}
                                     />
                                 </TableCell>
@@ -653,6 +662,7 @@ export default function CustomerCreditNotes() {
                                     <TextField
                                         select
                                         size="small"
+                                        disabled={isLocked}
                                         value={row.description}
                                         onChange={async (e) => {
                                             const selected = items.find((item: any) => item.description === e.target.value);
@@ -706,6 +716,7 @@ export default function CustomerCreditNotes() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.quantity}
+                                        InputProps={{ readOnly: isLocked }}
                                         onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))}
                                     />
                                 </TableCell>
@@ -716,6 +727,7 @@ export default function CustomerCreditNotes() {
                                     <CurrencyAmountInput
                                         value={row.price}
                                         currencyCode={customerCurrency}
+                                        disabled={isLocked}
                                         onChange={(v) => handleChange(row.id, "price", v)}
                                     />
                                 </TableCell>
@@ -724,24 +736,36 @@ export default function CustomerCreditNotes() {
                                 </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
                                 <TableCell>
-                                    {i === rows.length - 1 ? (
-                                        <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={handleAddRow}>
+                                    {isLastRow ? (
+                                        <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={handleAddRow} disabled={!row.itemCode || !(Number(row.quantity) > 0)}>
                                             Add
                                         </Button>
                                     ) : (
-                                        <Button
-                                            size="small"
-                                            variant="outlined"
-                                            color="error"
-                                            startIcon={<DeleteIcon />}
-                                            onClick={() => handleRemoveRow(row.id)}
-                                        >
-                                            Delete
-                                        </Button>
+                                        <Stack direction="row" spacing={1}>
+                                            {editingRowId === row.id ? (
+                                                <Button size="small" variant="contained" onClick={() => setEditingRowId(null)}>
+                                                    Done
+                                                </Button>
+                                            ) : (
+                                                <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={() => setEditingRowId(row.id)}>
+                                                    Edit
+                                                </Button>
+                                            )}
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                color="error"
+                                                startIcon={<DeleteIcon />}
+                                                onClick={() => handleRemoveRow(row.id)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        </Stack>
                                     )}
                                 </TableCell>
                             </TableRow>
-                        ))}
+                            );
+                        })}
                     </TableBody>
 
                     <TableFooter>

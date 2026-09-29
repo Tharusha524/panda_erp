@@ -672,7 +672,7 @@ export default function DirectGRN() {
                 {/* Actions */}
                 <TableCell align="center">
                   {i === rows.length - 1 ? (
-                    <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddRow}>
+                    <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddRow} disabled={!row.itemCode || !(Number(row.quantity) > 0)}>
                       Add
                     </Button>
                   ) : (

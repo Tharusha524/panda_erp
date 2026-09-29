@@ -97,6 +97,9 @@ export default function UpdateSalesOrderEntry() {
     const [comments, setComments] = useState("");
     const [shippingCharge, setShippingCharge] = useState(0);
     const [priceColumnLabel, setPriceColumnLabel] = useState("Price After Tax");
+    // A completed row (not the last, always-open one) is locked until its
+    // "Edit" button is clicked — before that, its fields can't be changed.
+    const [editingRowId, setEditingRowId] = useState<number | null>(null);
 
     // Additional fields for Quotation Delivery Details
     const [validUntil, setValidUntil] = useState("");
@@ -474,6 +477,7 @@ export default function UpdateSalesOrderEntry() {
                         setPayment(order.payment_terms ? String(order.payment_terms) : "");
                         setComments(order.comments);
                         setShippingCharge(order.freight_cost || 0);
+                        setShippingCompany(order.ship_via ? String(order.ship_via) : "");
                         // Fetch details
                         const details = await getSalesOrderDetailsByOrderNo(state.id);
                         if (details.length > 0) {
@@ -548,7 +552,7 @@ export default function UpdateSalesOrderEntry() {
                 reference,
                 ord_date: orderDate,
                 order_type: Number(priceList) || 0,
-                ship_via: 1,
+                ship_via: Number(shippingCompany) || 0,
                 delivery_address: customerAddr || "",
                 contact_phone: customerPhone,
                 contact_email: customerEmail,
@@ -844,13 +848,18 @@ export default function UpdateSalesOrderEntry() {
                     </TableHead>
 
                     <TableBody>
-                        {rows.map((row, i) => (
-                            <TableRow key={row.id}>
+                        {rows.map((row, i) => {
+                            const isLastRow = i === rows.length - 1;
+                            const isLocked = !isLastRow && editingRowId !== row.id;
+
+                            return (
+                            <TableRow key={row.id} data-row-id={row.id}>
                                 <TableCell>{i + 1}</TableCell>
                                 <TableCell>
                                     <TextField
                                         size="small"
                                         value={row.itemCode}
+                                        InputProps={{ readOnly: isLocked }}
                                         onChange={(e) => handleChange(row.id, "itemCode", e.target.value)}
                                     />
                                 </TableCell>
@@ -858,6 +867,7 @@ export default function UpdateSalesOrderEntry() {
                                     <TextField
                                         select
                                         size="small"
+                                        disabled={isLocked}
                                         value={row.description}
                                         onChange={(e) => {
                                             const selected = items.find((item: any) => item.description === e.target.value);
@@ -887,6 +897,7 @@ export default function UpdateSalesOrderEntry() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.quantity}
+                                        InputProps={{ readOnly: isLocked }}
                                         onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))}
                                     />
                                 </TableCell>
@@ -897,6 +908,7 @@ export default function UpdateSalesOrderEntry() {
                                     <CurrencyAmountInput
                                         value={priceColumnLabel === "Price before Tax" ? row.priceBeforeTax : row.priceAfterTax}
                                         currencyCode={customerCurrency}
+                                        disabled={isLocked}
                                         onChange={(v) => handleChange(row.id, priceColumnLabel === "Price before Tax" ? "priceBeforeTax" : "priceAfterTax", v)}
                                     />
                                 </TableCell>
@@ -909,32 +921,32 @@ export default function UpdateSalesOrderEntry() {
                                 </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
                                 <TableCell>
-                                    {i === rows.length - 1 ? (
+                                    {isLastRow ? (
                                         <Button
                                             size="small"
                                             variant="contained"
                                             startIcon={<AddIcon />}
                                             onClick={handleAddRow}
+                                            disabled={!row.itemCode || !(Number(row.quantity) > 0)}
                                         >
                                             Add
                                         </Button>
                                     ) : (
                                         <Stack direction="row" spacing={1} justifyContent="center">
-                                            <Button
-                                                variant="outlined"
-                                                size="small"
-                                                startIcon={<EditIcon />}
-                                                onClick={() => {
-                                                    // Focus on the first editable field (item code)
-                                                    const rowElement = document.querySelector(`[data-row-id="${row.id}"]`);
-                                                    if (rowElement) {
-                                                        const firstInput = rowElement.querySelector('input') as HTMLInputElement;
-                                                        if (firstInput) firstInput.focus();
-                                                    }
-                                                }}
-                                            >
-                                                Edit
-                                            </Button>
+                                            {editingRowId === row.id ? (
+                                                <Button variant="contained" size="small" onClick={() => setEditingRowId(null)}>
+                                                    Done
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    startIcon={<EditIcon />}
+                                                    onClick={() => setEditingRowId(row.id)}
+                                                >
+                                                    Edit
+                                                </Button>
+                                            )}
                                             <Button
                                                 variant="outlined"
                                                 color="error"
@@ -948,7 +960,8 @@ export default function UpdateSalesOrderEntry() {
                                     )}
                                 </TableCell>
                             </TableRow>
-                        ))}
+                            );
+                        })}
                     </TableBody>
 
                     <TableFooter>

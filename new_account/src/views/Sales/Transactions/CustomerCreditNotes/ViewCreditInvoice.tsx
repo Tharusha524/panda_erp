@@ -15,6 +15,7 @@ import { getTaxTypes } from "../../../../api/Tax/taxServices";
 import { creditNoteGlNavState } from "../../../../utils/salesGlJournalNavState";
 import { getCustAllocations } from "../../../../api/CustAllocation/CustAllocationApi";
 import { TransactionPrintPage, TransactionPrintTemplate } from "../../../../components/Print";
+import { formatPrintMoney } from "../../../../utils/formatPrintDocument";
 import {
   DOCUMENT_PRINT_TYPES,
   STANDARD_ITEM_PRINT_COLUMNS,
@@ -246,15 +247,15 @@ export default function ViewCreditInvoice() {
             type: "Invoice",
             number: originalInvoice.trans_no,
             date: originalInvoice.tran_date || "—",
-            totalAmount: Number(originalInvoice.ov_amount || 0).toFixed(2),
+            totalAmount: formatPrintMoney(originalInvoice.ov_amount || 0),
             leftToAllocate: "0.00",
-            thisAllocation: Number(currentTrans?.alloc || 0).toFixed(2),
+            thisAllocation: formatPrintMoney(currentTrans?.alloc || 0),
         }];
 
         return {
             hasAllocations: true,
             allocations,
-            totalAllocated: Number(currentTrans?.alloc || 0).toFixed(2),
+            totalAllocated: formatPrintMoney(currentTrans?.alloc || 0),
             leftToAllocate: "0.00",
         };
     }, [currentTrans, debtorTrans]);

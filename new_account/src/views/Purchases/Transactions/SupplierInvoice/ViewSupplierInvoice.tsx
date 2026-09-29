@@ -15,6 +15,7 @@ import {
   DOCUMENT_PRINT_TYPES,
   PURCHASE_ITEM_PRINT_COLUMNS,
 } from "../../../../utils/transactionPrintColumns";
+import { formatPrintMoney } from "../../../../utils/formatPrintDocument";
 
 export default function ViewSupplierInvoice() {
   const { state } = useLocation();
@@ -146,12 +147,12 @@ export default function ViewSupplierInvoice() {
         item: String(row.item ?? "—"),
         description: String(row.description ?? "—"),
         quantity: String(row.quantity ?? "—"),
-        price: Number(row.price ?? 0).toFixed(2),
-        total: Number(
+        price: formatPrintMoney(row.price ?? 0),
+        total: formatPrintMoney(
           row.lineValue != null
             ? row.lineValue
             : Number(row.quantity || 0) * Number(row.price || 0)
-        ).toFixed(2),
+        ),
       })),
     [lineSource]
   );

@@ -1,4 +1,5 @@
 import type { TransactionPrintLine, TransactionPrintTaxLine } from "../types/transactionPrint";
+import { formatPrintMoney } from "./formatPrintDocument";
 
 export function salesLineTotal(item: {
   unit_price?: number | string;
@@ -26,9 +27,9 @@ export function buildSalesOrderPrintLines(
       description: item.description || "—",
       quantity: item.quantity ?? "—",
       unit: unitName,
-      price: Number(item.unit_price || 0).toFixed(2),
+      price: formatPrintMoney(item.unit_price || 0),
       discount: item.discount_percent ? `${item.discount_percent}%` : "—",
-      total: salesLineTotal(item).toFixed(2),
+      total: formatPrintMoney(salesLineTotal(item)),
     };
   });
 }
@@ -74,8 +75,8 @@ export function buildPurchaseOrderPrintLines(
     description: row.description || "—",
     quantity: row.quantity ?? "—",
     unit: resolveUnit?.(row) || row.unit || "—",
-    price: Number(row.price || 0).toFixed(2),
-    total: Number(row.lineTotal ?? Number(row.quantity || 0) * Number(row.price || 0)).toFixed(2),
+    price: formatPrintMoney(row.price || 0),
+    total: formatPrintMoney(row.lineTotal ?? Number(row.quantity || 0) * Number(row.price || 0)),
   }));
 }
 
@@ -102,9 +103,9 @@ export function buildDebtorDetailPrintLines(
       unit: unitFound?.abbr || "—",
     };
     if (includePricing) {
-      line.price = price.toFixed(2);
+      line.price = formatPrintMoney(price);
       line.discount = disc ? `${disc}%` : "—";
-      line.total = (qty * price * (1 - disc / 100)).toFixed(2);
+      line.total = formatPrintMoney(qty * price * (1 - disc / 100));
     }
     return line;
   });
@@ -125,8 +126,8 @@ export function buildAllocationPrintLines(
     number: String(row.number ?? "—"),
     ref: row.ref || "—",
     date: row.date || "—",
-    total: Number(row.total_amount ?? 0).toFixed(2),
-    allocated: Number(row.this_allocation ?? 0).toFixed(2),
+    total: formatPrintMoney(row.total_amount ?? 0),
+    allocated: formatPrintMoney(row.this_allocation ?? 0),
   }));
 }
 

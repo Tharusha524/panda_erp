@@ -25,7 +25,7 @@ import { getTaxTypes } from "../../../../api/Tax/taxServices";
 import { useCustomerCredit } from "../../../../hooks/useCustomerCredit";
 import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSummaryFields";
 import { TransactionPrintPage, TransactionPrintTemplate } from "../../../../components/Print";
-import { formatPrintDate } from "../../../../utils/formatPrintDocument";
+import { formatPrintDate, formatPrintMoney } from "../../../../utils/formatPrintDocument";
 import { STANDARD_ITEM_PRINT_COLUMNS } from "../../../../utils/transactionPrintColumns";
 import { useQuery } from "@tanstack/react-query";
 
@@ -315,9 +315,9 @@ export default function ViewDirectInvoice() {
         description: it.description ?? "—",
         quantity: it.quantity ?? "—",
         unit: it.unitAbbr ?? "—",
-        price: Number(it.unit_price ?? 0).toFixed(2),
+        price: formatPrintMoney(it.unit_price ?? 0),
         discount: it.discount_percent != null ? `${it.discount_percent}%` : "—",
-        total: it.total ?? "—",
+        total: it.total != null ? formatPrintMoney(it.total) : "—",
       })),
     [resolvedItemDetails]
   );

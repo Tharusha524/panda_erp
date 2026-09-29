@@ -5,7 +5,7 @@ import {
   DOCUMENT_PRINT_TYPES,
   GL_JOURNAL_PRINT_COLUMNS,
 } from "../../../../utils/transactionPrintColumns";
-import { formatPrintDate } from "../../../../utils/formatPrintDocument";
+import { formatPrintDate, formatPrintMoney } from "../../../../utils/formatPrintDocument";
 
 type JournalLine = {
   journalDate?: string;
@@ -60,8 +60,8 @@ export default function ViewJournalEntry() {
         account: entry.accountCode || "—",
         description: entry.accountName || "—",
         costCenter: entry.costCenter || "—",
-        debit: entry.debit ? Number(entry.debit).toFixed(2) : "—",
-        credit: entry.credit ? Number(entry.credit).toFixed(2) : "—",
+        debit: entry.debit ? formatPrintMoney(entry.debit) : "—",
+        credit: entry.credit ? formatPrintMoney(entry.credit) : "—",
         memo: entry.memo || "—",
       })),
     [journalEntries, date]

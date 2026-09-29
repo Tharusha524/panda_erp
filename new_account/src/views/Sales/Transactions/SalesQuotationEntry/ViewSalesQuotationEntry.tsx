@@ -19,7 +19,7 @@ import { getItems } from "../../../../api/Item/ItemApi";
 import { getItemUnits } from "../../../../api/ItemUnit/ItemUnitApi";
 import { useCustomerCredit } from "../../../../hooks/useCustomerCredit";
 import { TransactionPrintPage, TransactionPrintTemplate } from "../../../../components/Print";
-import { formatPrintDate } from "../../../../utils/formatPrintDocument";
+import { formatPrintDate, formatPrintMoney } from "../../../../utils/formatPrintDocument";
 import { STANDARD_ITEM_PRINT_COLUMNS } from "../../../../utils/transactionPrintColumns";
 import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSummaryFields";
 import { useQuery } from "@tanstack/react-query";
@@ -223,11 +223,11 @@ export default function ViewSalesQuotationEntry() {
   const printLines = useMemo(
     () =>
       orderDetails.map((item: any) => {
-        const itemTotal = (
+        const itemTotal = formatPrintMoney(
           parseFloat(item.unit_price || 0) *
           parseFloat(item.quantity || 0) *
           (1 - parseFloat(item.discount_percent || 0) / 100)
-        ).toFixed(2);
+        );
         const itemData = items.find((i: any) => i.stock_id === item.stk_code);
         const unitData = itemUnits.find((u: any) => u.id === itemData?.units);
         const unitName = unitData?.abbr || item.units || "—";
@@ -236,7 +236,7 @@ export default function ViewSalesQuotationEntry() {
           description: item.description || "—",
           quantity: item.quantity ?? "—",
           unit: unitName,
-          price: Number(item.unit_price || 0).toFixed(2),
+          price: formatPrintMoney(item.unit_price || 0),
           discount: item.discount_percent ? `${item.discount_percent}%` : "—",
           total: itemTotal,
         };

@@ -14,7 +14,7 @@ import {
   DOCUMENT_PRINT_TYPES,
 } from "../../../../utils/transactionPrintColumns";
 import { buildAllocationPrintLines } from "../../../../utils/transactionPrintHelpers";
-import { formatPrintDate } from "../../../../utils/formatPrintDocument";
+import { formatPrintDate, formatPrintMoney } from "../../../../utils/formatPrintDocument";
 
 export default function ViewSupplierPaymentEntry() {
   const { state } = useLocation();
@@ -151,10 +151,10 @@ export default function ViewSupplierPaymentEntry() {
           documentFields={[
             { label: "Bank Account", value: bankAccount || "—" },
             { label: "Date Paid", value: formatPrintDate(datePaid) },
-            { label: "Payment Amount", value: paymentAmount.toFixed(2) },
-            { label: "Discount", value: Number(discount ?? 0).toFixed(2) },
+            { label: "Payment Amount", value: formatPrintMoney(paymentAmount) },
+            { label: "Discount", value: formatPrintMoney(discount ?? 0) },
             { label: "Payment Type", value: paymentType || "—" },
-            { label: "Total Allocated", value: allocatedTotal.toFixed(2) },
+            { label: "Total Allocated", value: formatPrintMoney(allocatedTotal) },
           ]}
           columns={ALLOCATION_PRINT_COLUMNS}
           lines={printLines}

@@ -15,7 +15,7 @@ import {
   DOCUMENT_PRINT_TYPES,
 } from "../../../../utils/transactionPrintColumns";
 import { buildAllocationPrintLines } from "../../../../utils/transactionPrintHelpers";
-import { formatPrintDate } from "../../../../utils/formatPrintDocument";
+import { formatPrintDate, formatPrintMoney } from "../../../../utils/formatPrintDocument";
 
 function debtorDocumentTotal(dt: any): number {
   if (!dt) return 0;
@@ -291,18 +291,18 @@ export default function ViewCustomerPayments() {
             },
             {
               label: "Payment Amount",
-              value: paymentAmount.toFixed(2),
+              value: formatPrintMoney(paymentAmount),
             },
             {
               label: "Bank Amount",
-              value: Number(bankTrans?.amount ?? paymentAmount).toFixed(2),
+              value: formatPrintMoney(bankTrans?.amount ?? paymentAmount),
             },
             {
               label: "Discount",
-              value: Number(debtorTrans?.ov_discount ?? discount ?? 0).toFixed(2),
+              value: formatPrintMoney(debtorTrans?.ov_discount ?? discount ?? 0),
             },
             { label: "Payment Type", value: paymentType || "—" },
-            { label: "Total Allocated", value: allocatedTotal.toFixed(2) },
+            { label: "Total Allocated", value: formatPrintMoney(allocatedTotal) },
           ]}
           columns={ALLOCATION_PRINT_COLUMNS}
           lines={printLines}

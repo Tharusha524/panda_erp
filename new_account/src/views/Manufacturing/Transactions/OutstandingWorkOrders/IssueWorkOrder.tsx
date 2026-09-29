@@ -427,7 +427,7 @@ export default function IssueWorkOrder() {
 
                       <TableCell align="center">
                           {i === rows.length - 1 ? (
-                            <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddRow}>Add</Button>
+                            <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddRow} disabled={!row.itemCode || !(Number(row.quantity) > 0)}>Add</Button>
                           ) : (
                             <Stack direction="row" spacing={1}>
                               <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => handleEditRow(row.id)}>Edit</Button>
