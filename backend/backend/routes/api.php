@@ -176,6 +176,11 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 // Public — the login/signup page itself isn't authenticated yet.
 Route::get('login-slideshow-images', [\App\Http\Controllers\LoginSlideshowImageController::class, 'index']);
 
+// Trial Balance account drill-down popup — all transactions for one account,
+// independent of the Reports module.
+Route::get('gl-accounts/{accountCode}/transactions', [\App\Http\Controllers\GlAccountInquiryController::class, 'show'])
+    ->where('accountCode', '.*');
+
 // Public — serves files from the "public" storage disk directly, working
 // the same locally and on hosting regardless of whether the storage:link
 // symlink exists (see StorageFileController for why).

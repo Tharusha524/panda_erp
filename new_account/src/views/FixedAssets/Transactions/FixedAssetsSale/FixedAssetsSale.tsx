@@ -506,7 +506,7 @@ export default function FixedAssetsSale() {
         { title: "Fixed Assets Sale" },
     ];
 
-    const subTotal = rows.reduce((sum, r) => sum + r.total, 0);
+    const subTotal = rows.slice(0, -1).reduce((sum, r) => sum + r.total, 0);
     const amountTotal = subTotal + shippingCharge;
 
     return (

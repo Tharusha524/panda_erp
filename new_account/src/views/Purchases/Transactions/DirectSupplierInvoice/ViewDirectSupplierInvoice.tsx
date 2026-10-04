@@ -1,25 +1,10 @@
-import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
-import React, { useMemo } from "react";
-import {
-  Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-  Stack,
-  Button,
-  Grid,
-} from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import PageTitle from "../../../../components/PageTitle";
-import Breadcrumb from "../../../../components/BreadCrumb";
 import { getSuppliers } from "../../../../api/Supplier/SupplierApi";
+import { formatPrintMoney } from "../../../../utils/formatPrintDocument";
+import { TransactionPrintPage, TransactionPrintTemplate } from "../../../../components/Print";
+import { PURCHASE_ITEM_PRINT_COLUMNS } from "../../../../utils/transactionPrintColumns";
 
 export default function ViewDirectSupplierInvoice() {
   const { state } = useLocation();
@@ -34,15 +19,14 @@ export default function ViewDirectSupplierInvoice() {
     items = [],
     subtotal,
     totalInvoice,
+    autoPrint = false,
   } = state || {};
 
-  // Fetch suppliers for display
   const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers"],
     queryFn: getSuppliers,
   });
 
-  // Supplier name resolve
   const supplierName = useMemo(() => {
     if (!supplier) return "-";
     const found = (suppliers || []).find(
@@ -51,145 +35,64 @@ export default function ViewDirectSupplierInvoice() {
     return found ? found.supp_name : supplier;
   }, [suppliers, supplier]);
 
+  const supplierCurrency = useMemo(() => {
+    if (!supplier) return undefined;
+    const found = (suppliers || []).find(
+      (s: any) => String(s.supplier_id) === String(supplier)
+    );
+    return found?.curr_code || undefined;
+  }, [suppliers, supplier]);
+
+  const printLines = useMemo(
+    () =>
+      (items as any[]).map((row: any) => ({
+        delivery: String(row.delivery ?? "—"),
+        item: String(row.item ?? "—"),
+        description: String(row.description ?? "—"),
+        quantity: String(row.quantity ?? "—"),
+        price: formatPrintMoney(row.price ?? 0),
+        total: formatPrintMoney(
+          row.lineValue != null
+            ? row.lineValue
+            : Number(row.quantity || 0) * Number(row.price || 0)
+        ),
+      })),
+    [items]
+  );
+
   const breadcrumbItems = [
     { title: "Home", href: "/dashboard" },
     { title: "Direct Supplier Invoice" },
   ];
 
   return (
-    <FormPageLayout>
-      {/* Header */}
-      <Box
-        sx={{
-          padding: 2,
-          boxShadow: 2,
-          borderRadius: 1,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
-        <Box>
-          <PageTitle title={`Direct Supplier Invoice - ${reference || "-"}`} />
-          <Breadcrumb breadcrumbs={breadcrumbItems} />
-        </Box>
-        <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
-        >
-          Back
-        </Button>
-      </Box>
-      {/* Invoice Information */}
-      <Paper sx={{ p: 3 }}>
-        <Typography
-          variant="h6"
-          sx={{ mb: 2, fontWeight: 600, color: "var(--pallet-dark-blue)" }}
-        >
-          SUPPLIER INVOICE # {reference || "-"}
-        </Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <Typography>
-              <b>Supplier:</b> {supplierName}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography>
-              <b>Reference:</b> {reference || "-"}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography>
-              <b>Supplier's Reference:</b> {supplierRef || "-"}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography>
-              <b>Invoice Date:</b> {invoiceDate || "-"}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography>
-              <b>Due Date:</b> {dueDate || "-"}
-            </Typography>
-          </Grid>
-        </Grid>
-      </Paper>
-      {/* Items Table */}
-      <Paper sx={{ p: 2 }}>
-        <Typography sx={{ mb: 1, fontWeight: 600 }}>
-          Received Items Charged on this Invoice
-        </Typography>
-
-        <TableContainer component={Paper}>
-          <Table size="small">
-            <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
-              <TableRow>
-                <TableCell>Delivery</TableCell>
-                <TableCell>Item</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Quantity</TableCell>
-                <TableCell>Price</TableCell>
-                <TableCell>Line Value</TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {items.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6}>No items available</TableCell>
-                </TableRow>
-              ) : (
-                items.map((row: any, idx: number) => (
-                  <TableRow key={idx}>
-                    <TableCell>{row.delivery ?? "-"}</TableCell>
-                    <TableCell>{row.item ?? "-"}</TableCell>
-                    <TableCell>{row.description ?? "-"}</TableCell>
-                    <TableCell>{row.quantity ?? "-"}</TableCell>
-                    <TableCell>{row.price ?? "-"}</TableCell>
-                    <TableCell>{row.lineValue ?? "-"}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        {/* Totals Section */}
-        <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
-          <Box sx={{ width: 260 }}>
-            <Stack direction="row" justifyContent="space-between" mb={1}>
-              <Typography>Subtotal:</Typography>
-              <Typography>{subtotal ?? "-"}</Typography>
-            </Stack>
-
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              sx={{ fontWeight: 600 }}
-            >
-              <Typography sx={{ fontWeight: 600 }}>Total Invoice:</Typography>
-              <Typography sx={{ fontWeight: 600 }}>
-                {totalInvoice ?? "-"}
-              </Typography>
-            </Stack>
-          </Box>
-        </Box>
-
-        {/* Action Buttons */}
-        <Stack direction="row" spacing={2} justifyContent="flex-end" mt={3}>
-          <Button variant="contained" color="primary">
-            Print
-          </Button>
-          <Button variant="outlined" onClick={() => navigate(-1)}>
-            Close
-          </Button>
-        </Stack>
-      </Paper>
-    </FormPageLayout>
+    <TransactionPrintPage
+      pageTitle={`Direct Supplier Invoice - ${reference || "—"}`}
+      breadcrumbs={breadcrumbItems}
+      onBack={() => navigate(-1)}
+      autoPrint={autoPrint}
+      ready={items.length > 0 || Boolean(reference)}
+      printContent={
+        <TransactionPrintTemplate
+          documentType="Direct Supplier Invoice"
+          reference={reference}
+          documentDate={invoiceDate}
+          dueDate={dueDate}
+          currency={supplierCurrency}
+          partyLabel="Supplier"
+          partyName={supplierName}
+          documentFields={[
+            { label: "Supplier's Ref", value: supplierRef || "—" },
+          ]}
+          columns={PURCHASE_ITEM_PRINT_COLUMNS}
+          lines={printLines}
+          totals={{
+            subtotal: Number(subtotal) || undefined,
+            total: Number(totalInvoice) || 0,
+            currency: supplierCurrency,
+          }}
+        />
+      }
+    />
   );
 }

@@ -389,7 +389,7 @@ export default function DirectSupplierInvoice() {
   };
 
   // ========= Subtotal =========
-  const subTotal = rows.reduce((sum, r) => sum + r.total, 0);
+  const subTotal = rows.slice(0, -1).reduce((sum, r) => sum + r.total, 0);
 
   // ========= Place Order =========
   const handlePlaceOrder = () => {

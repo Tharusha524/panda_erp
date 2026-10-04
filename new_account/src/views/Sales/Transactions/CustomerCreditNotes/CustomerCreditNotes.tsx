@@ -373,6 +373,7 @@ export default function CustomerCreditNotes() {
     }, [branch, branches]);
 
     const subTotal = rows
+        .slice(0, -1)
         .filter((r) => r.selectedItemId && r.quantity > 0)
         .reduce((sum, r) => sum + r.total, 0);
 

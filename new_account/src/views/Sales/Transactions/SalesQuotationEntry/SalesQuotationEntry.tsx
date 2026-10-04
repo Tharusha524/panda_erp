@@ -291,7 +291,7 @@ export default function SalesQuotationEntry() {
     // Update price column label when price list changes
     useEffect(() => {
         if (priceList) {
-            const selected = priceLists.find((pl: any) => pl.id === priceList);
+            const selected = priceLists.find((pl: any) => String(pl.id) === String(priceList));
             if (selected) {
                 if (selected.taxIncl) {
                     setPriceColumnLabel("Price after Tax");

@@ -275,7 +275,7 @@ export function SalesOrderEntry() {
     // Update price column label when price list changes
     useEffect(() => {
         if (priceList) {
-            const selected = priceLists.find((pl: any) => pl.id === priceList);
+            const selected = priceLists.find((pl: any) => String(pl.id) === String(priceList));
             if (selected) {
                 if (selected.taxIncl) {
                     setPriceColumnLabel("Price after Tax");
@@ -292,7 +292,7 @@ export function SalesOrderEntry() {
     useEffect(() => {
         if (priceList) {
             const updatePrices = async () => {
-                const selectedPriceList = priceLists.find((pl: any) => pl.id === priceList);
+                const selectedPriceList = priceLists.find((pl: any) => String(pl.id) === String(priceList));
                 const newRows = await Promise.all(
                     rows.map(async (row) => {
                         if (row.selectedItemId) {

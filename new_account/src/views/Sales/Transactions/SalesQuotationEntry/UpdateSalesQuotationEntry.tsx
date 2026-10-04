@@ -445,7 +445,7 @@ export default function UpdateSalesQuotationEntry() {
         { title: "Modifying Sales Quotation" },
     ];
 
-    const subTotal = rows.reduce((sum, r) => sum + r.total, 0);
+    const subTotal = rows.slice(0, -1).reduce((sum, r) => sum + r.total, 0);
     const documentTotal = subTotal + Number(shippingCharge || 0);
 
     const { summary: creditSummary, isLoading: creditLoading } = useCustomerCredit(

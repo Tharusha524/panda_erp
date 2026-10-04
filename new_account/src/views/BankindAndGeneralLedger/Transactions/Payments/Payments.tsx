@@ -624,6 +624,7 @@ export default function Payments() {
                     value={row.amount}
                     InputProps={{ readOnly: isLocked }}
                     onChange={(e) => handleChange(row.id, "amount", e.target.value)}
+                    sx={{ minWidth: 140 }}
                   />
                 </TableCell>
                 <TableCell>
@@ -670,7 +671,7 @@ export default function Payments() {
             <TableRow>
               <TableCell colSpan={7}>
                 <Typography align="right" sx={{ pr: 2, fontWeight: 600 }}>
-                  Total: {rows.reduce((sum, r) => sum + Number(r.amount || 0), 0).toFixed(2)}
+                  Total: {rows.slice(0, -1).reduce((sum, r) => sum + Number(r.amount || 0), 0).toFixed(2)}
                 </Typography>
               </TableCell>
             </TableRow>

@@ -40,6 +40,7 @@ import {
   resolveRowGroupName,
   rowHasActivity,
 } from "../../../../utils/trialBalanceGrouping";
+import GlAccountTransactionsDialog from "./GlAccountTransactionsDialog";
 
 interface Row {
   id: number;
@@ -74,6 +75,7 @@ function TrialBalancePage() {
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(-1);
+  const [drillDownAccount, setDrillDownAccount] = useState<{ code: string; name: string } | null>(null);
 
   // Fetch GL accounts, chart classes, and chart types
   const { data: chartMasters = [] } = useQuery({
@@ -383,8 +385,18 @@ function TrialBalancePage() {
 
                         {groupRows.map((r) => (
                           <TableRow key={r.id} hover>
-                            <TableCell sx={{ borderRight: "2px solid #e0e0e0" }}>{r.account}</TableCell>
-                            <TableCell sx={{ borderRight: "2px solid #e0e0e0" }}>{r.accountName}</TableCell>
+                            <TableCell
+                              sx={{ borderRight: "2px solid #e0e0e0", color: "primary.main", cursor: "pointer", textDecoration: "underline" }}
+                              onClick={() => setDrillDownAccount({ code: r.account, name: r.accountName })}
+                            >
+                              {r.account}
+                            </TableCell>
+                            <TableCell
+                              sx={{ borderRight: "2px solid #e0e0e0", color: "primary.main", cursor: "pointer", textDecoration: "underline" }}
+                              onClick={() => setDrillDownAccount({ code: r.account, name: r.accountName })}
+                            >
+                              {r.accountName}
+                            </TableCell>
                             <TableCell align="right" sx={{ borderRight: "1px solid #e0e0e0" }}>{formatAmount(r.broughtForwardDebit)}</TableCell>
                             <TableCell align="right" sx={{ borderRight: "2px solid #e0e0e0" }}>{formatAmount(r.broughtForwardCredit)}</TableCell>
                             <TableCell align="right" sx={{ borderRight: "1px solid #e0e0e0" }}>{formatAmount(r.thisPeriodDebit)}</TableCell>
@@ -494,6 +506,13 @@ function TrialBalancePage() {
           </TableFooter>
         </Table>
       </TableContainer>
+
+      <GlAccountTransactionsDialog
+        open={!!drillDownAccount}
+        onClose={() => setDrillDownAccount(null)}
+        accountCode={drillDownAccount?.code ?? null}
+        accountName={drillDownAccount?.name}
+      />
     </Stack>
   );
 }

@@ -450,7 +450,7 @@ export default function UpdateCustomerCreditNotes() {
         }
     }, [branch, branches]);
 
-    const subTotal = rows.reduce((sum, r) => sum + r.total, 0);
+    const subTotal = rows.slice(0, -1).reduce((sum, r) => sum + r.total, 0);
 
     // Calculate taxes if taxIncl is true
     const selectedPriceList = useMemo(() => {

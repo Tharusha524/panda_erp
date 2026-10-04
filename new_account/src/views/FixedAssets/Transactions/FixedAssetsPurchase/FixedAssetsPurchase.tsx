@@ -242,7 +242,7 @@ export default function FixedAssetsPurchase() {
   };
 
   // ========= Subtotal =========
-  const subTotal = rows.reduce((sum, r) => sum + r.total, 0);
+  const subTotal = rows.slice(0, -1).reduce((sum, r) => sum + r.total, 0);
 
   const faItems = items.filter(
     (it: { mb_flag?: number }) => Number(it.mb_flag) === 4

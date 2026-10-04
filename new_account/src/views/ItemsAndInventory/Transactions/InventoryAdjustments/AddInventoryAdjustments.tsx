@@ -612,6 +612,7 @@ export default function AddInventoryAdjustments() {
                 <Typography align="right" sx={{ pr: 2, fontWeight: 600 }}>
                   Grand Total:{" "}
                   {rows
+                    .slice(0, -1)
                     .reduce((sum, r) => sum + Number(r.total), 0)
                     .toFixed(2)}
                 </Typography>
