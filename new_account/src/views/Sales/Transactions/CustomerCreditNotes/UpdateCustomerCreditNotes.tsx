@@ -1092,12 +1092,12 @@ export default function UpdateCustomerCreditNotes() {
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <FormattedNumberField size="small" value={row.discount} InputProps={{ readOnly: true }} />
+                                    <FormattedNumberField size="small" value={row.discount} InputProps={{ readOnly: isLocked }} onChange={(e) => handleChange(row.id, "discount", Number(e.target.value))} />
                                 </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
                                 <TableCell>
                                     {isLastRow ? (
-                                        <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={handleAddRow} disabled={!row.itemCode || !(Number(row.quantity) > 0)}>
+                                        <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={handleAddRow} disabled={!row.itemCode || !(Number(row.quantity) > 0) || !(Number(row.price) > 0)}>
                                             Add
                                         </Button>
                                     ) : (

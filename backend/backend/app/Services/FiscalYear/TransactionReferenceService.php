@@ -209,7 +209,7 @@ class TransactionReferenceService
                 'table' => 'supp_trans',
                 'types' => [20, 21, 22],
                 'type_column' => 'trans_type',
-                'date_column' => 'tran_date',
+                'date_column' => 'trans_date',
                 'reference_column' => 'reference',
             ],
             [
@@ -249,6 +249,27 @@ class TransactionReferenceService
                 'types' => [18],
                 'type_column' => null,
                 'date_column' => 'ord_date',
+                'reference_column' => 'reference',
+            ],
+            [
+                'table' => 'workorders',
+                'types' => [26],
+                'type_column' => null,
+                'date_column' => 'date',
+                'reference_column' => 'wo_ref',
+            ],
+            [
+                'table' => 'wo_issues',
+                'types' => [28],
+                'type_column' => null,
+                'date_column' => 'issue_date',
+                'reference_column' => 'reference',
+            ],
+            [
+                'table' => 'wo_manufacture',
+                'types' => [29],
+                'type_column' => null,
+                'date_column' => 'date',
                 'reference_column' => 'reference',
             ],
         ];

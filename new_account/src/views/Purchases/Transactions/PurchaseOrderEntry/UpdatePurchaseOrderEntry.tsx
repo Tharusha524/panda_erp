@@ -651,7 +651,7 @@ export default function UpdatePurchaseOrderEntry() {
                 {/* Actions */}
                 <TableCell align="center">
                   {isLastRow ? (
-                    <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddRow} disabled={!row.itemCode || !(Number(row.quantity) > 0)}>
+                    <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddRow} disabled={!row.itemCode || !(Number(row.quantity) > 0) || !(Number(row.price) > 0)}>
                       Add
                     </Button>
                   ) : (

@@ -123,7 +123,7 @@ export default function CustomerPayments() {
   const { data: fiscalYears = [] } = useQuery({ queryKey: ["fiscalYears"], queryFn: getFiscalYears });
   const { data: debtorTrans = [] } = useQuery({ queryKey: ["debtorTrans"], queryFn: getDebtorTrans });
   const { reference: nextReference, manualEntryRequired, suffix } =
-    useNextFiscalYearReference(12);
+    useNextFiscalYearReference(12, { asOfDate: depositDate || undefined });
   const { data: salesOrders = [] } = useQuery({ queryKey: ["salesOrders"], queryFn: getSalesOrders });
   const { data: companyData } = useQuery({
     queryKey: ["company"],

@@ -62,6 +62,7 @@ import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
 import { useAuth } from "../../../../context/AuthContext";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 
 export default function SalesQuotationEntry() {
     const navigate = useNavigate();
@@ -561,39 +562,16 @@ export default function SalesQuotationEntry() {
         }
     }, [selectedFiscalYear]);
 
-    // Set reference when fiscal year loads (or fallback when DB empty)
+    // trans_type 32 = Sales Quotation
+    const { reference: nextQuotationReference } = useNextFiscalYearReference(32, {
+        asOfDate: quotationDate || undefined,
+    });
+
     useEffect(() => {
-        if (!selectedFiscalYear) return;
-
-        // Determine year: prefer fiscal year start if available, otherwise use current calendar year
-        const year = selectedFiscalYear
-            ? new Date(selectedFiscalYear.fiscal_year_from).getFullYear()
-            : new Date().getFullYear();
-
-        // Fetch existing references to generate next sequential number
-        // Only consider stock moves of the same transaction type (17 = adjustment)
-        getSalesOrders()
-            .then((salesOrders) => {
-                const orders = Array.isArray(salesOrders) ? salesOrders : [];
-                const yearReferences = orders
-                    .filter((order: any) => order && order.trans_type === 32 && order.reference && String(order.reference).endsWith(`/${year}`))
-                    .map((order: any) => String(order.reference))
-                    .map((ref: string) => {
-                        const match = String(ref).match(/^(\d{3})\/\d{4}$/);
-                        return match ? parseInt(match[1], 10) : 0;
-                    })
-                    .filter((num: number) => !isNaN(num) && num > 0);
-
-                const nextNumber = yearReferences.length > 0 ? Math.max(...yearReferences) + 1 : 1;
-                const formattedNumber = nextNumber.toString().padStart(3, '0');
-                setReference(`${formattedNumber}/${year}`);
-            })
-            .catch((error) => {
-                console.error("Error fetching sales orders for reference generation:", error);
-                // Fallback to 001 if there's an error or DB is empty
-                setReference(`001/${year}`);
-            });
-    }, [selectedFiscalYear]);
+        if (nextQuotationReference) {
+            setReference(nextQuotationReference);
+        }
+    }, [nextQuotationReference]);
 
     return (
         <FormPageLayout>
@@ -835,7 +813,8 @@ export default function SalesQuotationEntry() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.discount}
-                                        InputProps={{ readOnly: true }}
+                                        InputProps={{ readOnly: isLocked }}
+                                        onChange={(e) => handleChange(row.id, "discount", Number(e.target.value))}
                                     />
                                 </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
@@ -846,7 +825,7 @@ export default function SalesQuotationEntry() {
                                             variant="contained"
                                             startIcon={<AddIcon />}
                                             onClick={handleAddRow}
-                                            disabled={!canEdit || !row.selectedItemId || !(Number(row.quantity) > 0)}
+                                            disabled={!canEdit || !row.selectedItemId || !(Number(row.quantity) > 0) || !(Number(row.priceAfterTax) > 0 || Number(row.priceBeforeTax) > 0)}
                                         >
                                             Add
                                         </Button>

@@ -25,11 +25,11 @@ import theme from "../../../../theme";
 import { getWorkCentres } from "../../../../api/WorkCentre/WorkCentreApi";
 import { useQueryClient } from "@tanstack/react-query";
 import { getInventoryLocations } from "../../../../api/InventoryLocation/InventoryLocationApi";
-import { getWoManufactures } from "../../../../api/WorkOrders/WOManufactureApi";
 import { getWorkOrderById } from "../../../../api/WorkOrders/WorkOrderApi";
 import { postWorkOrderProduce } from "../../../../api/Manufacturing/ManufacturingApi";
 import { runTransactionSave } from "../../../../utils/transactionSave";
 import { useAuth } from "../../../../context/AuthContext";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 
 export default function ProduceWorkOrder() {
   const { hasEditPermission } = useAuth();
@@ -46,7 +46,7 @@ export default function ProduceWorkOrder() {
 
   const today = new Date().toISOString().split("T")[0];
   const [prodDate, setProdDate] = useState(today);
-  const [prodReference, setProdReference] = useState("YYYY");
+  const [prodReference, setProdReference] = useState("");
   const [prodType, setProdType] = useState("produce");
   const [prodQuantity, setProdQuantity] = useState("0");
   const [prodMemo, setProdMemo] = useState("");
@@ -55,34 +55,16 @@ export default function ProduceWorkOrder() {
 
   const queryClient = useQueryClient();
 
-  // compute next sequential manufacture reference
+  // trans_type 29 = Work Order Production
+  const { reference: nextProductionReference } = useNextFiscalYearReference(29, {
+    asOfDate: prodDate || undefined,
+  });
+
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const currentYear = new Date(prodDate).getFullYear();
-        const yearStr = String(currentYear);
-        const allMan = await getWoManufactures();
-        const refsForYear = Array.isArray(allMan)
-          ? allMan
-              .map((m: any) => String(m.reference ?? "").trim())
-              .filter((r: string) => new RegExp(`^(\\d{3})\\/${yearStr}$`).test(r))
-          : [];
-        const nums = refsForYear.map((r: string) => Number(r.split("/")[0]) || 0);
-        const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
-        const nextNum = maxNum + 1;
-        const computedRef = `${String(nextNum).padStart(3, "0")}/${yearStr}`;
-        if (mounted) {
-          if (!prodReference || prodReference === "YYYY") {
-            setProdReference(computedRef);
-          }
-        }
-      } catch (err) {
-        console.warn("Failed to prefill manufacture reference:", err);
-      }
-    })();
-    return () => { mounted = false; };
-  }, [prodDate, prodReference]);
+    if (nextProductionReference) {
+      setProdReference(nextProductionReference);
+    }
+  }, [nextProductionReference]);
 
   useEffect(() => {
     (async () => {
@@ -137,22 +119,7 @@ export default function ProduceWorkOrder() {
     if (!idFromState) { setFormError("Work order id missing"); return; }
 
     try {
-      const currentYear = new Date(prodDate).getFullYear();
-      let computedRef = prodReference;
-      try {
-        const allMan = await getWoManufactures();
-        const yearStr = String(currentYear);
-        const refsForYear = Array.isArray(allMan)
-          ? allMan
-              .map((m: any) => String(m.reference ?? "").trim())
-              .filter((r: string) => new RegExp(`^(\\d{3})\\/${yearStr}$`).test(r))
-          : [];
-        const nums = refsForYear.map((r: string) => Number(r.split("/")[0]) || 0);
-        const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
-        computedRef = `${String(maxNum + 1).padStart(3, "0")}/${yearStr}`;
-      } catch {
-        computedRef = prodReference;
-      }
+      const computedRef = String(prodReference).trim();
 
       const saveResult = await runTransactionSave(async () =>
         postWorkOrderProduce({

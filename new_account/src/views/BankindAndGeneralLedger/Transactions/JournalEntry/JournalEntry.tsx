@@ -193,8 +193,6 @@ export default function JournalEntry() {
 
   // Active fiscal year from company setup
   const { fiscalYearFrom, fiscalYearTo } = useFiscalYearFormDefaults();
-  const { reference: nextReference, manualEntryRequired, suffix } =
-    useNextFiscalYearReference(0, { enabled: !isEditMode });
   const { code: homeCurrencyCode } = useHomeCurrency();
 
   const {
@@ -245,6 +243,8 @@ export default function JournalEntry() {
   const [journalDate, setJournalDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
+  const { reference: nextReference, manualEntryRequired, suffix } =
+    useNextFiscalYearReference(0, { enabled: !isEditMode, asOfDate: journalDate || undefined });
   const [documentDate, setDocumentDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );

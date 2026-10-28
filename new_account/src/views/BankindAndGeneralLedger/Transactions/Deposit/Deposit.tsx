@@ -117,8 +117,6 @@ export default function Deposits() {
 
   // Active fiscal year from company setup
   const { fiscalYear: activeFiscalYear } = useFiscalYearFormDefaults();
-  const { reference: nextReference, manualEntryRequired, suffix } =
-    useNextFiscalYearReference(2);
 
   const { user } = useCurrentUser();
   const userId = user?.id ?? (Number(localStorage.getItem("userId")) || 0);
@@ -152,6 +150,8 @@ export default function Deposits() {
   const [date, setDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
+  const { reference: nextReference, manualEntryRequired, suffix } =
+    useNextFiscalYearReference(2, { asOfDate: date || undefined });
   const [reference, setReference] = useState("");
   const [dateError, setDateError] = useState("");
   const [isSaving, setIsSaving] = useState(false);

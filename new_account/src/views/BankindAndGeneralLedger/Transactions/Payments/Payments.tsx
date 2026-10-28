@@ -140,8 +140,6 @@ export default function Payments() {
   }, [fromField, paymentSourceAccounts]);
 
   const { fiscalYear: activeFiscalYear } = useFiscalYearFormDefaults();
-  const { reference: nextReference, manualEntryRequired, suffix } =
-    useNextFiscalYearReference(1, { enabled: !isEditMode });
 
   const {
     data: existingPayment,
@@ -186,6 +184,8 @@ export default function Payments() {
   const [date, setDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
+  const { reference: nextReference, manualEntryRequired, suffix } =
+    useNextFiscalYearReference(1, { enabled: !isEditMode, asOfDate: date || undefined });
   const [reference, setReference] = useState("");
   const [dateError, setDateError] = useState("");
   const [isSaving, setIsSaving] = useState(false);

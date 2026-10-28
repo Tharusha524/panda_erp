@@ -29,6 +29,7 @@ import { buildCustomerPaymentAllocationRows } from "../../../../utils/customerPa
 import CustomerCurrencyField from "../../../../components/CustomerCurrencyField";
 import { customerCurrencyCode } from "../../../../utils/relationId";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 import { getBankTrans, createBankTrans, updateBankTrans } from "../../../../api/BankTrans/BankTransApi";
 import { getFiscalYears } from "../../../../api/FiscalYear/FiscalYearApi";
 import { getCompanies } from "../../../../api/CompanySetup/CompanySetupApi";
@@ -165,24 +166,16 @@ export default function UpdateCustomerPayments() {
   }, [selectedFiscalYear]);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (isEditing) return;
-    if (!selectedFiscalYear) return;
-    const yearLabel = selectedFiscalYear.fiscal_year || new Date(selectedFiscalYear.fiscal_year_from).getFullYear();
+  // trans_type 12 = Customer Payment; an existing payment keeps its own reference.
+  const { reference: nextPaymentReference } = useNextFiscalYearReference(12, {
+    asOfDate: depositDate || undefined,
+    enabled: !isEditing,
+  });
 
-    // Find existing references for this fiscal year and for customer payments only (trans_type = 12)
-    const relevantRefs = debtorTrans.filter((dt: any) =>
-      Number(dt.trans_type) === 12 && dt.reference && dt.reference.endsWith(`/${yearLabel}`)
-    );
-    const numbers = relevantRefs.map((dt: any) => {
-      const match = dt.reference.match(/^(\d{3})\/.+$/);
-      return match ? parseInt(match[1], 10) : 0;
-    });
-    const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
-    const nextNum = maxNum + 1;
-    const nextRef = `${nextNum.toString().padStart(3, '0')}/${yearLabel}`;
-    setReference(nextRef);
-  }, [selectedFiscalYear, debtorTrans, isEditing]);
+  useEffect(() => {
+    if (isEditing || !nextPaymentReference) return;
+    setReference(nextPaymentReference);
+  }, [nextPaymentReference, isEditing]);
 
   useEffect(() => {
     if (isEditing) return;

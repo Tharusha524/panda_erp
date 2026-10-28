@@ -48,6 +48,7 @@ import { getItemCategories } from "../../../../api/ItemCategories/ItemCategories
 import { postFaPurchase } from "../../../../api/FixedAssets/FaTransactionApi";
 import { useSnackbar } from "notistack";
 import { useSupplierCredit } from "../../../../hooks/useSupplierCredit";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 import SupplierCreditSummaryFields from "../../../../components/SupplierCreditSummaryFields";
 import ItemSearchSelect, { type ItemSearchOption } from "../../../../components/ItemSearchSelect";
 import { findFaItemByStockId } from "../../../../utils/fixedAssetsScreenCopy";
@@ -104,14 +105,17 @@ export default function FixedAssetsPurchase() {
   const { summary: supplierCreditSummary, isLoading: supplierCreditLoading } =
     useSupplierCredit(supplier || null, suppliers);
 
-  // ========= Generate Reference =========
+  // A fixed asset purchase posts as a Supplier Invoice (trans_type 20),
+  // so it shares that type's reference sequence.
+  const { reference: nextPurchaseReference } = useNextFiscalYearReference(20, {
+    asOfDate: orderDate || undefined,
+  });
+
   useEffect(() => {
-    const year = new Date().getFullYear();
-    const random = Math.floor(Math.random() * 1000)
-      .toString()
-      .padStart(3, "0");
-    setReference(`PO-${random}/${year}`);
-  }, []);
+    if (nextPurchaseReference) {
+      setReference(nextPurchaseReference);
+    }
+  }, [nextPurchaseReference]);
 
   // ========= Update Payment Terms When Supplier Changes =========
   useEffect(() => {
@@ -517,7 +521,7 @@ export default function FixedAssetsPurchase() {
                 {/* Actions */}
                 <TableCell align="center">
                   {isLastRow ? (
-                    <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddRow} disabled={!row.itemCode || !(Number(row.quantity) > 0)}>
+                    <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddRow} disabled={!row.itemCode || !(Number(row.quantity) > 0) || !(Number(row.price) > 0)}>
                       Add
                     </Button>
                   ) : (

@@ -769,7 +769,7 @@ export default function FixedAssetsSale() {
                                             variant="contained"
                                             startIcon={<AddIcon />}
                                             onClick={handleAddRow}
-                                            disabled={!row.itemCode || !(Number(row.quantity) > 0)}
+                                            disabled={!row.itemCode || !(Number(row.quantity) > 0) || !(Number(row.priceAfterTax) > 0)}
                                         >
                                             Add
                                         </Button>

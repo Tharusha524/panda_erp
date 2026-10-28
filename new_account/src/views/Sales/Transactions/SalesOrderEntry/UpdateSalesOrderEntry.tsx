@@ -916,7 +916,8 @@ export default function UpdateSalesOrderEntry() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.discount}
-                                        InputProps={{ readOnly: true }}
+                                        InputProps={{ readOnly: isLocked }}
+                                        onChange={(e) => handleChange(row.id, "discount", Number(e.target.value))}
                                     />
                                 </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
@@ -927,7 +928,7 @@ export default function UpdateSalesOrderEntry() {
                                             variant="contained"
                                             startIcon={<AddIcon />}
                                             onClick={handleAddRow}
-                                            disabled={!row.itemCode || !(Number(row.quantity) > 0)}
+                                            disabled={!row.itemCode || !(Number(row.quantity) > 0) || !(Number(row.priceAfterTax) > 0 || Number(row.priceBeforeTax) > 0)}
                                         >
                                             Add
                                         </Button>

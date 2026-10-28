@@ -54,6 +54,7 @@ import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
 import { useAuth } from "../../../../context/AuthContext";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 
 export default function SupplierPaymentEntry() {
   const { hasEditPermission } = useAuth();
@@ -198,57 +199,16 @@ export default function SupplierPaymentEntry() {
     setDatePaid(new Date().toISOString().split("T")[0]);
   }, [location.key]);
 
+  // trans_type 22 = Supplier Payment
+  const { reference: nextSupplierPaymentReference } = useNextFiscalYearReference(22, {
+    asOfDate: datePaid || undefined,
+  });
+
   useEffect(() => {
-    (async () => {
-      try {
-        // Determine year: prefer fiscal year start if available, otherwise use current calendar year
-        const year = selectedFiscalYear
-          ? new Date(selectedFiscalYear.fiscal_year_from).getFullYear()
-          : new Date().getFullYear();
-
-        // Determine fiscal year label
-        let yearLabel = String(year);
-        if (selectedFiscalYear) {
-          const fromYear = new Date(selectedFiscalYear.fiscal_year_from).getFullYear();
-          const toYear = new Date(selectedFiscalYear.fiscal_year_to).getFullYear();
-          yearLabel = selectedFiscalYear.fiscal_year || (fromYear === toYear ? String(fromYear) : `${fromYear}-${toYear}`);
-        }
-
-        // find next supp_trans reference number for trans_type 22
-        let nextNum = 1;
-        try {
-          const allSupp = await getSuppTrans();
-          if (Array.isArray(allSupp) && allSupp.length > 0) {
-            // only consider transactions of this page's type (22)
-            const relevant = allSupp.filter((s: any) => Number(s.trans_type ?? s.type ?? 0) === 22);
-            const yearPattern = `/${yearLabel}`;
-            const matchingRefs = relevant
-              .map((s: any) => s.reference ?? s.supp_reference ?? '')
-              .filter((ref: string) => String(ref).endsWith(yearPattern))
-              .map((ref: string) => {
-                const parts = String(ref).split('/');
-                if (parts.length >= 2) {
-                  const parsed = parseInt(parts[0], 10);
-                  return isNaN(parsed) ? 0 : parsed;
-                }
-                return 0;
-              })
-              .filter((n: number) => n > 0);
-
-            if (matchingRefs.length > 0) {
-              nextNum = Math.max(...matchingRefs) + 1;
-            }
-          }
-        } catch (e) {
-          console.warn('Failed to fetch supp_trans for reference generation', e);
-        }
-
-        setReference(`${nextNum.toString().padStart(3, '0')}/${yearLabel}`);
-      } catch (err) {
-        console.warn('Failed to generate payment reference', err);
-      }
-    })();
-  }, [selectedFiscalYear, location.key]);
+    if (nextSupplierPaymentReference) {
+      setReference(nextSupplierPaymentReference);
+    }
+  }, [nextSupplierPaymentReference]);
 
   // helper to normalize date strings to YYYY-MM-DD (top-level for reuse)
   const formatDate = (val: any) => {

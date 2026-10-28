@@ -389,7 +389,7 @@ export function SalesOrderEntry() {
     const { data: fiscalYears = [] } = useQuery({ queryKey: ["fiscalYears"], queryFn: getFiscalYears });
 
     const { reference: nextReference, manualEntryRequired, suffix } =
-        useNextFiscalYearReference(30);
+        useNextFiscalYearReference(30, { asOfDate: orderDate || undefined });
 
     // Find selected fiscal year from company setup
     const selectedFiscalYear = useMemo(() => {
@@ -979,7 +979,8 @@ export function SalesOrderEntry() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.discount}
-                                        InputProps={{ readOnly: true }}
+                                        InputProps={{ readOnly: isLocked }}
+                                        onChange={(e) => handleChange(row.id, "discount", Number(e.target.value))}
                                     />
                                 </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
@@ -990,7 +991,7 @@ export function SalesOrderEntry() {
                                             variant="contained"
                                             startIcon={<AddIcon />}
                                             onClick={handleAddRow}
-                                            disabled={!row.itemCode || !(Number(row.quantity) > 0)}
+                                            disabled={!row.itemCode || !(Number(row.quantity) > 0) || !(Number(row.priceAfterTax) > 0 || Number(row.priceBeforeTax) > 0)}
                                         >
                                             Add
                                         </Button>

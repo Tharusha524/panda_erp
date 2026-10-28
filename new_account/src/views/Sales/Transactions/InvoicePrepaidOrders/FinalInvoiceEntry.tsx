@@ -40,6 +40,7 @@ import { getSalesOrderDetailsByOrderNo } from "../../../../api/SalesOrders/Sales
 import { getTaxGroupItemsByGroupId } from "../../../../api/Tax/TaxGroupItemApi";
 import { getTaxTypes } from "../../../../api/Tax/taxServices";
 import { useAuth } from "../../../../context/AuthContext";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 
 export default function FinalInvoiceEntry() {
   const { hasEditPermission } = useAuth();
@@ -158,7 +159,6 @@ export default function FinalInvoiceEntry() {
       setCurrency(customerData?.curr_code || "Currency not found");
       setSalesType(salesTypeData?.typeName || "Sales type not found");
       setPaymentTerm(paymentTermValue);
-      setReference(nextInvoiceReference);
       setShippingCompany(shippingCompanyData?.shipper_name || "Shipping company not found");
       setShippingCost(salesOrder.ov_freight || 0);
       setMemo(salesOrder.comments || "");
@@ -181,15 +181,17 @@ export default function FinalInvoiceEntry() {
   // Determine selected price list
   const selectedPriceList = salesTypes.find((st: any) => String(st.id) === String(salesOrder?.order_type));
 
-  // Calculate next invoice reference
-  const nextInvoiceReference = useMemo(() => {
-    const year = new Date().getFullYear();
-    const invoices = debtorTrans.filter(d => d.trans_type === 10 && d.reference?.endsWith(`/${year}`));
-    const numbers = invoices.map(d => parseInt(d.reference?.split('/')[0]) || 0);
-    const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
-    const nextNum = (maxNum + 1).toString().padStart(3, '0');
-    return `${nextNum}/${year}`;
-  }, [debtorTrans]);
+  // trans_type 10 = Sales Invoice
+  const { reference: nextInvoiceReference } = useNextFiscalYearReference(10, {
+    asOfDate: date || undefined,
+    enabled: Boolean(salesOrder),
+  });
+
+  useEffect(() => {
+    if (nextInvoiceReference) {
+      setReference(nextInvoiceReference);
+    }
+  }, [nextInvoiceReference]);
 
   const queryClient = useQueryClient();
   useEffect(() => {

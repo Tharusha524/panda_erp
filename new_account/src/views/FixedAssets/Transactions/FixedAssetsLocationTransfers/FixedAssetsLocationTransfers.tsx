@@ -28,7 +28,6 @@ import { getLocations } from "../../../../api/FixedAssetsLocation/FixedAssetsLoc
 import { getItems, getItemById } from "../../../../api/Item/ItemApi";
 import { getItemUnits } from "../../../../api/ItemUnit/ItemUnitApi";
 import { getFiscalYears } from "../../../../api/FiscalYear/FiscalYearApi";
-import { getStockMoves } from "../../../../api/StockMoves/StockMovesApi";
 import { getStockQoh } from "../../../../api/Inventory/StockQuantityApi";
 import { postFaOpeningBalance, postFaTransfer } from "../../../../api/FixedAssets/FaTransactionApi";
 import { createAuditTrail } from "../../../../api/StockMoves/AuditTrailsApi";
@@ -41,6 +40,7 @@ import { findFaItemByStockId } from "../../../../utils/fixedAssetsScreenCopy";
 import theme from "../../../../theme";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
 import { useAuth } from "../../../../context/AuthContext";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 
 function faLocationCode(loc: { locationCode?: string; loc_code?: string }): string {
   return String(loc.locationCode ?? loc.loc_code ?? "").toUpperCase();
@@ -127,37 +127,6 @@ export default function FixedAssetsLocationTransfers() {
     }
   }, [currentFiscalYear]);
 
-  // Set reference when fiscal year loads (or fallback when DB empty)
-  useEffect(() => {
-    // Determine year: prefer fiscal year start if available, otherwise use current calendar year
-    const year = currentFiscalYear
-      ? new Date(currentFiscalYear.fiscal_year_from).getFullYear()
-      : new Date().getFullYear();
-
-    // Fetch existing references to generate next sequential number
-    // Only consider stock moves of the same transaction type (16 = transfer)
-    getStockMoves()
-      .then((stockMoves) => {
-        const moves = Array.isArray(stockMoves) ? stockMoves : [];
-        const yearReferences = moves
-          .filter((move: any) => move && move.type === 16 && move.reference && String(move.reference).endsWith(`/${year}`))
-          .map((move: any) => String(move.reference))
-          .map((ref: string) => {
-            const match = String(ref).match(/^(\d{3})\/\d{4}$/);
-            return match ? parseInt(match[1], 10) : 0;
-          })
-          .filter((num: number) => !isNaN(num) && num > 0);
-
-        const nextNumber = yearReferences.length > 0 ? Math.max(...yearReferences) + 1 : 1;
-        const formattedNumber = nextNumber.toString().padStart(3, '0');
-        setReference(`${formattedNumber}/${year}`);
-      })
-      .catch((error) => {
-        console.error("Error fetching stock moves for reference generation:", error);
-        // Fallback to 001 if there's an error or DB is empty
-        setReference(`001/${year}`);
-      });
-  }, [currentFiscalYear]);
   const [rows, setRows] = useState<{
     id: number;
     itemCode: string;
@@ -183,6 +152,18 @@ export default function FixedAssetsLocationTransfers() {
   const [toLocation, setToLocation] = useState("");
   const [date, setDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [reference, setReference] = useState("");
+
+  // A fixed asset location transfer posts as an inventory transfer (trans_type 16),
+  // so it shares that type's reference sequence.
+  const { reference: nextTransferReference } = useNextFiscalYearReference(16, {
+    asOfDate: date || undefined,
+  });
+
+  useEffect(() => {
+    if (nextTransferReference) {
+      setReference(nextTransferReference);
+    }
+  }, [nextTransferReference]);
   const [memo, setMemo] = useState("");
   const [dateError, setDateError] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
